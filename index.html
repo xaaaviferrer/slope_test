@@ -2,118 +2,148 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Slope Game 3D</title>
+  <title>Slope Game Replica</title>
   <style>
     body { margin: 0; overflow: hidden; background: black; }
     canvas { display: block; }
+    #scoreDisplay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-family: sans-serif;
+      font-size: 20px;
+    }
   </style>
 </head>
 <body>
+<div id="scoreDisplay">Puntuación: 0</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script>
-  let scene, camera, renderer;
-  let ball, platform;
-  let obstacles = [];
-  let speed = 0.2;
-  let ballSpeedX = 0;
-  let gravity = 0.005;
-  let velocityY = 0;
-  let score = 0;
-  let loader;
+let scene, camera, renderer;
+let ball, platform;
+let segments = [];
+let obstacles = [];
+let speed = 0.5;
+let ballSpeedX = 0;
+let velocityY = 0;
+let gravity = 0.02;
+let score = 0;
 
-  init();
-  animate();
+init();
+animate();
 
-  function init() {
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+function init() {
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
 
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+  // Lights
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(0, 50, 100);
+  scene.add(light);
 
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(0, 20, 10);
-    scene.add(light);
+  const ambient = new THREE.AmbientLight(0x404040);
+  scene.add(ambient);
 
-    const ambient = new THREE.AmbientLight(0x404040);
-    scene.add(ambient);
+  // Ball
+  const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+  const ballMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+  ball = new THREE.Mesh(ballGeometry, ballMaterial);
+  ball.position.set(0, 0.5, 0);
+  scene.add(ball);
 
-    const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-    const ballMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-    ball = new THREE.Mesh(ballGeometry, ballMaterial);
-    ball.position.y = 1;
-    scene.add(ball);
-
-    const platformGeometry = new THREE.BoxGeometry(10, 1, 1000);
-    const platformMaterial = new THREE.MeshStandardMaterial({ color: 0x111111 });
-    platform = new THREE.Mesh(platformGeometry, platformMaterial);
-    platform.position.z = -500;
-    platform.position.y = -0.5;
-    scene.add(platform);
-
-    camera.position.y = 3;
-    camera.position.z = 5;
-
-    generateObstacles();
-
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    window.addEventListener('resize', onWindowResize);
+  // Initial track
+  for (let i = 0; i < 20; i++) {
+    addTrackSegment(-i * 10);
   }
 
-  function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.position.set(0, 2, 5);
+
+  window.addEventListener('resize', onWindowResize);
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+}
+
+function addTrackSegment(z) {
+  const segmentGeometry = new THREE.BoxGeometry(10, 0.2, 10);
+  const segmentMaterial = new THREE.MeshStandardMaterial({ color: 0x111111 });
+  const segment = new THREE.Mesh(segmentGeometry, segmentMaterial);
+  segment.position.set((Math.random() - 0.5) * 4, -0.5, z);
+  scene.add(segment);
+  segments.push(segment);
+
+  // Obstacle chance
+  if (Math.random() < 0.3) {
+    const obsGeo = new THREE.BoxGeometry(1, 1, 1);
+    const obsMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const obs = new THREE.Mesh(obsGeo, obsMat);
+    obs.position.set(segment.position.x + (Math.random() - 0.5) * 6, 0.5, z);
+    scene.add(obs);
+    obstacles.push(obs);
+  }
+}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function onKeyDown(e) {
+  if (e.key === 'ArrowLeft') ballSpeedX = -0.2;
+  if (e.key === 'ArrowRight') ballSpeedX = 0.2;
+}
+
+function onKeyUp(e) {
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') ballSpeedX = 0;
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  ball.position.z -= speed;
+  ball.position.x += ballSpeedX;
+  velocityY -= gravity;
+  ball.position.y += velocityY;
+  if (ball.position.y < 0.5) {
+    ball.position.y = 0.5;
+    velocityY = 0;
   }
 
-  function generateObstacles() {
-    const obstacleGeometry = new THREE.BoxGeometry(1, 1, 1);
-    const obstacleMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-    for (let i = 10; i < 1000; i += 10) {
-      const obs = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-      obs.position.set((Math.random() - 0.5) * 8, 0.5, -i);
-      scene.add(obs);
-      obstacles.push(obs);
+  // Move camera with ball
+  camera.position.z = ball.position.z + 5;
+  camera.position.x = ball.position.x;
+
+  // Collision
+  for (let obs of obstacles) {
+    if (
+      Math.abs(ball.position.z - obs.position.z) < 0.5 &&
+      Math.abs(ball.position.x - obs.position.x) < 0.75
+    ) {
+      alert('¡Has perdido! Puntuación: ' + Math.floor(score));
+      location.reload();
     }
   }
 
-  function onKeyDown(e) {
-    if (e.key === 'ArrowLeft') ballSpeedX = -0.1;
-    if (e.key === 'ArrowRight') ballSpeedX = 0.1;
-  }
-
-  function onKeyUp(e) {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') ballSpeedX = 0;
-  }
-
-  function animate() {
-    requestAnimationFrame(animate);
-
-    ball.position.z -= speed;
-    ball.position.x += ballSpeedX;
-    velocityY -= gravity;
-    ball.position.y += velocityY;
-
-    if (ball.position.y < 0.5) {
-      ball.position.y = 0.5;
-      velocityY = 0;
-    }
-
-    camera.position.z = ball.position.z + 5;
-    camera.position.x = ball.position.x;
-
-    obstacles.forEach(obs => {
-      if (Math.abs(ball.position.z - obs.position.z) < 0.5 && Math.abs(ball.position.x - obs.position.x) < 0.75) {
-        alert('¡Fin del juego! Puntuación: ' + Math.floor(score));
-        window.location.reload();
-      }
+  // Recycle segments
+  if (segments.length > 0 && segments[0].position.z - ball.position.z > 20) {
+    let old = segments.shift();
+    scene.remove(old);
+    let obsOld = obstacles.filter(o => o.position.z === old.position.z);
+    obsOld.forEach(o => {
+      scene.remove(o);
+      obstacles.splice(obstacles.indexOf(o), 1);
     });
-
-    score += speed;
-    renderer.render(scene, camera);
+    addTrackSegment(segments[segments.length - 1].position.z - 10);
   }
+
+  score += speed;
+  document.getElementById("scoreDisplay").textContent = "Puntuación: " + Math.floor(score);
+  renderer.render(scene, camera);
+}
 </script>
 </body>
 </html>

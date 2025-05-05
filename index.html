@@ -20,130 +20,130 @@
 <div id="scoreDisplay">Puntuación: 0</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 <script>
-let scene, camera, renderer;
-let ball, platform;
-let segments = [];
-let obstacles = [];
-let speed = 0.5;
-let ballSpeedX = 0;
-let velocityY = 0;
-let gravity = 0.02;
-let score = 0;
+  let scene, camera, renderer;
+  let ball, platform;
+  let segments = [];
+  let obstacles = [];
+  let speed = 0.5;
+  let ballSpeedX = 0;
+  let velocityY = 0;
+  let gravity = 0.02;
+  let score = 0;
 
-init();
-animate();
+  init();
+  animate();
 
-function init() {
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+  function init() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-  // Lights
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(0, 50, 100);
-  scene.add(light);
+    // Lights
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(0, 50, 100);
+    scene.add(light);
 
-  const ambient = new THREE.AmbientLight(0x404040);
-  scene.add(ambient);
+    const ambient = new THREE.AmbientLight(0x404040);
+    scene.add(ambient);
 
-  // Ball
-  const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-  const ballMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-  ball = new THREE.Mesh(ballGeometry, ballMaterial);
-  ball.position.set(0, 0.5, 0);
-  scene.add(ball);
+    // Ball
+    const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+    const ballMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+    ball = new THREE.Mesh(ballGeometry, ballMaterial);
+    ball.position.set(0, 0.5, 0);
+    scene.add(ball);
 
-  // Initial track
-  for (let i = 0; i < 20; i++) {
-    addTrackSegment(-i * 10);
+    // Initial track
+    for (let i = 0; i < 20; i++) {
+      addTrackSegment(-i * 10);
+    }
+
+    camera.position.set(0, 2, 5);
+
+    window.addEventListener('resize', onWindowResize);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
   }
 
-  camera.position.set(0, 2, 5);
+  function addTrackSegment(z) {
+    const segmentGeometry = new THREE.BoxGeometry(10, 0.2, 10);
+    const segmentMaterial = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    const segment = new THREE.Mesh(segmentGeometry, segmentMaterial);
+    segment.position.set((Math.random() - 0.5) * 4, -0.5, z);
+    scene.add(segment);
+    segments.push(segment);
 
-  window.addEventListener('resize', onWindowResize);
-  window.addEventListener('keydown', onKeyDown);
-  window.addEventListener('keyup', onKeyUp);
-}
-
-function addTrackSegment(z) {
-  const segmentGeometry = new THREE.BoxGeometry(10, 0.2, 10);
-  const segmentMaterial = new THREE.MeshStandardMaterial({ color: 0x111111 });
-  const segment = new THREE.Mesh(segmentGeometry, segmentMaterial);
-  segment.position.set((Math.random() - 0.5) * 4, -0.5, z);
-  scene.add(segment);
-  segments.push(segment);
-
-  // Obstacle chance
-  if (Math.random() < 0.3) {
-    const obsGeo = new THREE.BoxGeometry(1, 1, 1);
-    const obsMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-    const obs = new THREE.Mesh(obsGeo, obsMat);
-    obs.position.set(segment.position.x + (Math.random() - 0.5) * 6, 0.5, z);
-    scene.add(obs);
-    obstacles.push(obs);
-  }
-}
-
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function onKeyDown(e) {
-  if (e.key === 'ArrowLeft') ballSpeedX = -0.2;
-  if (e.key === 'ArrowRight') ballSpeedX = 0.2;
-}
-
-function onKeyUp(e) {
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') ballSpeedX = 0;
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-
-  ball.position.z -= speed;
-  ball.position.x += ballSpeedX;
-  velocityY -= gravity;
-  ball.position.y += velocityY;
-  if (ball.position.y < 0.5) {
-    ball.position.y = 0.5;
-    velocityY = 0;
-  }
-
-  // Move camera with ball
-  camera.position.z = ball.position.z + 5;
-  camera.position.x = ball.position.x;
-
-  // Collision
-  for (let obs of obstacles) {
-    if (
-      Math.abs(ball.position.z - obs.position.z) < 0.5 &&
-      Math.abs(ball.position.x - obs.position.x) < 0.75
-    ) {
-      alert('¡Has perdido! Puntuación: ' + Math.floor(score));
-      location.reload();
+    // Obstacle chance
+    if (Math.random() < 0.3) {
+      const obsGeo = new THREE.BoxGeometry(1, 1, 1);
+      const obsMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+      const obs = new THREE.Mesh(obsGeo, obsMat);
+      obs.position.set(segment.position.x + (Math.random() - 0.5) * 6, 0.5, z);
+      scene.add(obs);
+      obstacles.push(obs);
     }
   }
 
-  // Recycle segments
-  if (segments.length > 0 && segments[0].position.z - ball.position.z > 20) {
-    let old = segments.shift();
-    scene.remove(old);
-    let obsOld = obstacles.filter(o => o.position.z === old.position.z);
-    obsOld.forEach(o => {
-      scene.remove(o);
-      obstacles.splice(obstacles.indexOf(o), 1);
-    });
-    addTrackSegment(segments[segments.length - 1].position.z - 10);
+  function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  score += speed;
-  document.getElementById("scoreDisplay").textContent = "Puntuación: " + Math.floor(score);
-  renderer.render(scene, camera);
-}
+  function onKeyDown(e) {
+    if (e.key === 'ArrowLeft') ballSpeedX = -0.2;
+    if (e.key === 'ArrowRight') ballSpeedX = 0.2;
+  }
+
+  function onKeyUp(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') ballSpeedX = 0;
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    ball.position.z -= speed;
+    ball.position.x += ballSpeedX;
+    velocityY -= gravity;
+    ball.position.y += velocityY;
+    if (ball.position.y < 0.5) {
+      ball.position.y = 0.5;
+      velocityY = 0;
+    }
+
+    // Move camera with ball
+    camera.position.z = ball.position.z + 5;
+    camera.position.x = ball.position.x;
+
+    // Collision
+    for (let obs of obstacles) {
+      if (
+        Math.abs(ball.position.z - obs.position.z) < 0.5 &&
+        Math.abs(ball.position.x - obs.position.x) < 0.75
+      ) {
+        alert('¡Has perdido! Puntuación: ' + Math.floor(score));
+        location.reload();
+      }
+    }
+
+    // Recycle segments
+    if (segments.length > 0 && segments[0].position.z - ball.position.z > 20) {
+      let old = segments.shift();
+      scene.remove(old);
+      let obsOld = obstacles.filter(o => o.position.z === old.position.z);
+      obsOld.forEach(o => {
+        scene.remove(o);
+        obstacles.splice(obstacles.indexOf(o), 1);
+      });
+      addTrackSegment(segments[segments.length - 1].position.z - 10);
+    }
+
+    score += speed;
+    document.getElementById("scoreDisplay").textContent = "Puntuación: " + Math.floor(score);
+    renderer.render(scene, camera);
+  }
 </script>
 </body>
 </html>
